@@ -135,15 +135,19 @@ class PrintStatusScreen(base.MicroPanelScreenBase):
             print_time = get_time_from_seconds(
                 self._printer.progress['printTime'] or 0)
             c.text((0, 18), f"Time: {print_time}")
-            
-            filament = (self._printer.job['filament']['tool0']
-                        if 'tool0' in self._printer.job['filament']
-                        else self._printer.job['filament'])
-            filament_length = float_count_formatter(
-                (filament['length'] or 0) / 1000, 3)
-            filament_mass = float_count_formatter(
-                (filament['volume'] or 0), 3)
-            c.text((0, 27), f"Filament: {filament_length}m/{filament_mass}cm3")
+
+            filament_info = "unknown"
+            filaments = self._printer.job['filament']
+            if filaments:
+                filament = (filaments['tool0']
+                            if 'tool0' in filaments
+                            else filaments)
+                filament_length = float_count_formatter(
+                    (filament['length'] or 0) / 1000, 3)
+                filament_mass = float_count_formatter(
+                    (filament['volume'] or 0), 3)
+                filament_info = f"{filament_length}m/{filament_mass}cm3"
+            c.text((0, 27), f"Filament: {filament_info}")
 
             # Display height if information available from DisplayLayerProgress
             height = (f"{self.display_layer_progress['current_height']:>5.1f}"
