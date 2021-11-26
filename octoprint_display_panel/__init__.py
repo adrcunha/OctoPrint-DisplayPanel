@@ -281,7 +281,8 @@ class Display_panelPlugin(octoprint.plugin.StartupPlugin,
 			if event in (Events.PRINT_STARTED, Events.PRINT_RESUMED):
 				self._printer_state = 2
 
-			self.disp.update_timer(self._printer_state)
+			if hasattr(self, 'disp'):
+				self.disp.update_timer(self._printer_state)
 
 	def start_display_timer(self, reconfigure=False):
 		# Vestigial, should be deleted

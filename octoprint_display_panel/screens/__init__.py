@@ -57,9 +57,12 @@ class MicroPanelScreenTop(base.MicroPanelScreenBase):
         # Define the main set of subscreens. These screens will be
         # rotated through via the 'mode' button in the order they are
         # listed below.
+        shutdown_command = self._settings.global_get(
+            ["server", "commands", "systemShutdownCommand"])
         self.subscreen_height = height - self.status_bar_height
         self.screens = {
-            'system': system.SystemInfoScreen(width, self.subscreen_height),
+            'system': system.SystemInfoScreen(width, self.subscreen_height,
+                                              shutdown_command),
             'printer': printer.PrinterInfoScreen(width, self.subscreen_height,
                                                  self._printer),
             'print': printer.PrintStatusScreen(width, self.subscreen_height,

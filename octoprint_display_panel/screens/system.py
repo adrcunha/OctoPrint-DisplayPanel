@@ -11,8 +11,9 @@ from . import base
 class SystemInfoScreen(base.MicroPanelScreenBase):
     """The common system information screen - IP, memory, etc.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, width, height, shutdown_command):
+        super().__init__(width, height)
+        self.shutdown_command = shutdown_command
         self.stats = {}
         self.last_stats = 0
         self.get_stats()
@@ -34,7 +35,14 @@ class SystemInfoScreen(base.MicroPanelScreenBase):
         c.text((0, 27), (f'D: {disk.used//GB}/{disk.total//GB} GB'
                          f' {disk_percent:.1f}%'))
         return c.image
-               
+
+    def handle_button(self, label):
+        if label == 'cancel_long':
+            self.set_subscreen(
+                ShutdownScreen(self.width, self.height, self.shutdown_command))
+            return {'DRAW'}
+        return {}
+
     def get_stats(self):
         # Only get stats every 5 seconds
         if (time.time() - self.last_stats) < 5:
@@ -60,3 +68,27 @@ class SystemInfoScreen(base.MicroPanelScreenBase):
         self.stats['disk'] = shutil.disk_usage('/')
         
     
+class ShutdownScreen(base.MicroPanelScreenBase):
+    """The shutdown screen.
+
+    This screen is shown by the MicroPanelScreenTop when the cancel
+    button is pressed for 5+ seconds when showing the system info.
+    """
+    def __init__(self, width, height, shutdown_command):
+        super().__init__(width, height)
+        self.shutdown_message = "Shutting down"
+        self.message_y = 11 # ((64-9)/2 - 16 --> 11
+        try:
+            import sarge
+            p = sarge.run(shutdown_command, async_=True)
+        except Exception as e:
+            self.shutdown_message = "** Error **\n{error}".format(error=e)
+            self.message_y = 0
+
+    def draw(self):
+        c = self.get_canvas()
+        c.text_centered(self.message_y, self.shutdown_message)
+        return c.image
+
+    def handle_button(self, label):
+        return {'IGNORE'}

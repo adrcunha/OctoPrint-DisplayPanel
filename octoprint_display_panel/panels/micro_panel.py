@@ -1,9 +1,12 @@
 
 from board import SCL, SDA
 import busio
+import time
 import adafruit_ssd1306
 import RPi.GPIO as GPIO
 
+import logging
+logger = logging.getLogger("octoprint.plugins.display_panel.panels")
 
 def bcm2board(bcm_pin):
     pinmap = [-1, -1, -1,  7, 29, 31, -1, -1, -1, -1, -1, 32,
@@ -23,6 +26,7 @@ class MicroPanel:
     def __init__(self, button_callback):
         self.button_event_callback = button_callback
         self.gpio_pinset = set()
+        self.last_press = None
         
     def setup(self, settings):
         """Apply settings from OctoPrint's SettingsPlugin mixin to
@@ -118,4 +122,26 @@ class MicroPanel:
         if channel not in self.input_pinset:
             return
 
-        self.button_event_callback(self.input_pinset[channel])
+        event_name = self.input_pinset[channel]
+        press_time = time.time()
+
+        # Debounce again: ignore presses less than 0.5s apart
+        if self.last_press and press_time - self.last_press < 0.5:
+            return
+        self.last_press = press_time
+
+        # Wait until button is released
+        while True:
+            time.sleep(self.debounce_time / 1000)
+            if GPIO.input(channel):
+                break
+        press_time = time.time() - press_time
+        logger.info(f'button {event_name} pressed for {press_time} seconds')
+
+        if press_time < 0.2:
+            logger.info(f'ignoring noise for button {event_name}')
+            return
+        if press_time >= 5:
+            event_name += '_long'
+
+        self.button_event_callback(event_name)
