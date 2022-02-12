@@ -85,6 +85,7 @@ class PrinterInfoScreen(base.MicroPanelScreenBase):
         c.text((0, 0), "Printer Temperatures")
         head_text = "no printer"
         bed_text = "no printer"
+        chamber_text = ""
         
         if not self._printer.is_disconnected():
             temperatures = self._printer.get_current_temperatures()
@@ -99,8 +100,16 @@ class PrinterInfoScreen(base.MicroPanelScreenBase):
                 bed_text = f"{bed['actual']} / {bed['target']}\xb0C"
             else:
                 bed_text = "no bed"
+
+            chamber = temperatures.get('chamber')
+            if chamber:
+                chamber_actual = float_count_formatter(chamber['actual'] or 0, 2)
+                chamber_target = float_count_formatter(chamber['target'] or 0, 2)
+                chamber_text = f"Cham: {chamber_actual} / {chamber_target}\xb0C"
+
         c.text((0, 9), f'Head: {head_text}')
         c.text((0, 18), f' Bed: {bed_text}')
+        c.text((0, 27), chamber_text)
 
         return c.image
 
