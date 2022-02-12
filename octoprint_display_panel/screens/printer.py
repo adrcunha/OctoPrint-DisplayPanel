@@ -136,22 +136,24 @@ class PrintStatusScreen(base.MicroPanelScreenBase):
                 self._printer.progress['printTime'] or 0)
             c.text((0, 18), f"Time: {print_time}")
 
-            filament_info = "unknown"
-            filaments = self._printer.job['filament']
-            if filaments:
-                filament = (filaments['tool0']
-                            if 'tool0' in filaments
-                            else filaments)
+            # logger.info(self._printer.job) - for debugging
+            if self._printer.job['filament'] is not None:
+                filament = (self._printer.job['filament']['tool0']
+                            if 'tool0' in self._printer.job['filament']
+                            else self._printer.job['filament'])
                 filament_length = float_count_formatter(
                     (filament['length'] or 0) / 1000, 3)
                 filament_mass = float_count_formatter(
                     (filament['volume'] or 0), 3)
-                filament_info = f"{filament_length}m/{filament_mass}cm3"
-            c.text((0, 27), f"Filament: {filament_info}")
+                c.text((0, 27), f"Filament: {filament_length}m/{filament_mass}cm3")
 
             # Display height if information available from DisplayLayerProgress
-            height = (f"{self.display_layer_progress['current_height']:>5.1f}"
-                      f"/{self.display_layer_progress['total_height']:>5.1f}")
+            if self.display_layer_progress['total_height'] != -1.0:
+                height = (f"{self.display_layer_progress['current_height']:>5.1f}"
+                          f"/{self.display_layer_progress['total_height']:>5.1f}")
+            else:
+                height = (f"{self.display_layer_progress['current_height']:>5.1f}"
+                          "/ --")
             layer = (f"{self.display_layer_progress['current_layer']:4d}"
                      f"/{self.display_layer_progress['total_layer']:4d}")
             height_text = ""
