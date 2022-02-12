@@ -124,24 +124,37 @@ class MicroPanel:
 
         event_name = self.input_pinset[channel]
         press_time = time.time()
+        unpress_time = press_time + 1
 
-        # Debounce again: ignore presses less than 0.5s apart
-        if self.last_press and press_time - self.last_press < 0.5:
-            return
-        self.last_press = press_time
+        # Debounce: ignore presses less than 0.5s apart
+        if self.last_press:
+            last_press = press_time - self.last_press
+            if last_press < 0.5:
+                # logger.info(f'button {event_name} pressed too soon ({last_press}s)')
+                return
 
         # Wait until button is released
         while True:
-            time.sleep(self.debounce_time / 1000)
-            if GPIO.input(channel):
-                break
-        press_time = time.time() - press_time
-        logger.info(f'button {event_name} pressed for {press_time} seconds')
+            # "Released" means: during debounce_time, button wasn't pressed for 51%+ of the time.
+            release_count = 0.0
+            debounce_time = 100
+            for _ in range(0, debounce_time):
+              time.sleep(0.001)
+              if GPIO.input(channel):
+                release_count += 1.0
+            debounce = release_count * 100 / debounce_time
+            # logger.info(f'button {event_name}: {debounce:0.2f}% certain')
+            if debounce > 51:
+              unpress_time = time.time()
+              break
 
-        if press_time < 0.2:
+        self.last_press = unpress_time
+        pressed_time = unpress_time - press_time
+        logger.info(f'button {event_name} pressed for {pressed_time}ss ({debounce:0.2f}% sure)')
+        if pressed_time < 0.2:
             logger.info(f'ignoring noise for button {event_name}')
             return
-        if press_time >= 5:
+        if pressed_time >= 5:
             event_name += '_long'
 
         self.button_event_callback(event_name)
