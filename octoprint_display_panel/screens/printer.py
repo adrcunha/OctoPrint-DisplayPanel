@@ -107,9 +107,9 @@ class PrinterInfoScreen(base.MicroPanelScreenBase):
                 chamber_target = float_count_formatter(chamber['target'] or 0, 2)
                 chamber_text = f"Cham: {chamber_actual} / {chamber_target}\xb0C"
 
-        c.text((0, 9), f'Head: {head_text}')
-        c.text((0, 18), f' Bed: {bed_text}')
-        c.text((0, 27), chamber_text)
+        c.text((0, 18), f'Head: {head_text}')
+        c.text((0, 27), f' Bed: {bed_text}')
+        c.text((0, 36), chamber_text)
 
         return c.image
 
