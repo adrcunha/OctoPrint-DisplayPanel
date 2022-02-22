@@ -63,6 +63,25 @@ def get_time_from_seconds(seconds):
     return f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
     
 
+def temp_formatter(t):
+    """Format a number/float/string representing a temperature as short as possible.
+    Integers are returned as such, while decimals use 2 places at most: 0, 1, 1.1, 1.11.
+    """
+    temp = float(t) if type(t) == str else t
+    if not temp:
+      return "0"
+    s = f"{temp:0.2f}"
+    if s[-3:] == ".00":
+      return s[:-3]
+    if s[-1] == "0":
+      return s[:-1]
+    return s
+
+
+def temp_data(data):
+    return f"{temp_formatter(data['actual'])} / {temp_formatter(data['target'])}\xb0C"
+
+
 def float_count_formatter(number, max_chars):
     """Show decimals up to length max_chars, then rounds to integer
     """
@@ -91,21 +110,19 @@ class PrinterInfoScreen(base.MicroPanelScreenBase):
             temperatures = self._printer.get_current_temperatures()
             tool = temperatures.get('tool0')
             if tool:
-                head_text = f"{tool['actual']} / {tool['target']}\xb0C"
+                head_text = temp_data(tool)
             else:
                 head_text = "no tool"
                 
             bed = temperatures.get('bed')
             if bed:
-                bed_text = f"{bed['actual']} / {bed['target']}\xb0C"
+                bed_text = temp_data(bed)
             else:
                 bed_text = "no bed"
 
             chamber = temperatures.get('chamber')
             if chamber:
-                chamber_actual = float_count_formatter(chamber['actual'] or 0, 2)
-                chamber_target = float_count_formatter(chamber['target'] or 0, 2)
-                chamber_text = f"Cham: {chamber_actual} / {chamber_target}\xb0C"
+                chamber_text = "Cham: " + temp_data(chamber)
 
         c.text((0, 18), f'Head: {head_text}')
         c.text((0, 27), f' Bed: {bed_text}')
@@ -154,7 +171,7 @@ class PrintStatusScreen(base.MicroPanelScreenBase):
                     (filament['length'] or 0) / 1000, 3)
                 filament_mass = float_count_formatter(
                     (filament['volume'] or 0), 3)
-                c.text((0, 27), f"Filament: {filament_length}m/{filament_mass}cm3")
+                c.text((0, 27), f"Filament: {filament_length}m/{filament_mass}cm\xb3")
 
             # Display height if information available from DisplayLayerProgress
             if self.display_layer_progress['total_height'] != -1.0:
