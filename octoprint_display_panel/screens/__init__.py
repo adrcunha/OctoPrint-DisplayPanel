@@ -12,7 +12,7 @@ implementing screens, see base.py.
 """
 from octoprint.events import Events
 
-from . import base, system, printer
+from . import base, system, printer, shutdown
 
 
 class MessageScreen(base.MicroPanelScreenBase):
@@ -44,6 +44,7 @@ class MicroPanelScreenTop(base.MicroPanelScreenBase):
     def __init__(self, width, height, _printer, _settings):
         self._printer = printer.PrinterHelper(_printer)
         self._settings = _settings
+        self._shutdown_screen = None
 
         # Define the status bar screen, which is typically displayed.
         self.status_bar_height = 16
@@ -57,12 +58,9 @@ class MicroPanelScreenTop(base.MicroPanelScreenBase):
         # Define the main set of subscreens. These screens will be
         # rotated through via the 'mode' button in the order they are
         # listed below.
-        shutdown_command = self._settings.global_get(
-            ["server", "commands", "systemShutdownCommand"])
         self.subscreen_height = height - self.status_bar_height
         self.screens = {
-            'system': system.SystemInfoScreen(width, self.subscreen_height,
-                                              shutdown_command),
+            'system': system.SystemInfoScreen(width, self.subscreen_height),
             'printer': printer.PrinterInfoScreen(width, self.subscreen_height,
                                                  self._printer),
             'print': printer.PrintStatusScreen(width, self.subscreen_height,
@@ -112,6 +110,12 @@ class MicroPanelScreenTop(base.MicroPanelScreenBase):
             main_top = 0
             
         c = self.get_canvas()
+
+        # If shutdown screen is showing, don't show anything else.
+        if self._shutdown_screen:
+            c.image.paste(self._shutdown_screen.draw(), (0, 0))
+            return c.image
+
         main_image = super().image
         c.image.paste(main_image, (0, main_top))
         if main_image.size[1] < self.height:
@@ -122,6 +126,17 @@ class MicroPanelScreenTop(base.MicroPanelScreenBase):
     def handle_button(self, label):
         """Take action on a button press, if not handled by the subscreen.
         """
+
+        # Long-pressing the cancel button shuts down the system
+        if self._shutdown_screen:
+            return {'IGNORE'}
+        if label == 'cancel_long':
+            shutdown_command = self._settings.global_get(
+                ["server", "commands", "systemShutdownCommand"])
+            self._shutdown_screen = shutdown.SystemShutdownScreen(
+                self.width, self.height, shutdown_command)
+            return {'DRAW'}
+
         if label == 'mode':
             self.next_subscreen()
             return {'DRAW'}
