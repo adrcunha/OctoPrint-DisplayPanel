@@ -124,7 +124,7 @@ class MicroPanel:
 
         event_name = self.input_pinset[channel]
         press_time = time.time()
-        unpress_time = press_time + 1
+        unpress_time = press_time + 0.01
 
         # Debounce: ignore presses less than 0.5s apart
         if self.last_press:
@@ -135,16 +135,16 @@ class MicroPanel:
 
         # Wait until button is released
         while True:
-            # "Released" means: during debounce_time, button wasn't pressed for 51%+ of the time.
+            # "Released" means: during debounce_time, button wasn't pressed for 90%+ of the time.
             release_count = 0.0
-            debounce_time = 100
+            debounce_time = self.debounce_time
             for _ in range(0, debounce_time):
               time.sleep(0.001)
               if GPIO.input(channel):
                 release_count += 1.0
             debounce = release_count * 100 / debounce_time
             # logger.info(f'button {event_name}: {debounce:0.2f}% certain')
-            if debounce > 51:
+            if debounce >= 90:
               unpress_time = time.time()
               break
 
