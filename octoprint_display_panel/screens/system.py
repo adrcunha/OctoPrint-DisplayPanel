@@ -16,23 +16,40 @@ class SystemInfoScreen(base.MicroPanelScreenBase):
         self.stats = {}
         self.last_stats = 0
         self.get_stats()
-        
+
+    def resource_usage(self, prefix, used_bytes, total_bytes):
+        MB = 1048576
+        GB = MB * 1024
+
+        percent = (used_bytes / total_bytes) * 100.0
+        unit = GB
+        unit_str = 'GB'
+        if total_bytes < GB:
+                unit = MB
+                unit_str = 'MB'
+                if total_bytes < MB:
+                        unit_str = 'kB'
+                        unit = 1024
+                        if total_bytes < 1024:
+                                unit_str = 'bytes'
+                                unit = 1
+        total = total_bytes // unit
+        used = used_bytes // unit
+        return f'{prefix}: {used}/{total} {unit_str} {percent:.1f}%'
+
     def draw(self):
         self.get_stats()
         load = self.stats['load']
         mem = self.stats['memory']
         disk = self.stats['disk']
-        disk_percent = (disk.used / disk.total) * 100.0
-        MB = 1048576
-        GB = MB * 1024
-        
+        data = self.stats['data']
+
         c = self.get_canvas()
         c.text_centered(0, self.stats['ip'])
-        c.text((0, 9), f'L: {load[0]:.2f}, {load[1]:.2f}, {load[2]:.2f}')
-        c.text((0, 18), (f'M: {mem.used//MB}/{mem.total//MB} MB'
-                         f' {mem.percent}%'))
-        c.text((0, 27), (f'D: {disk.used//GB}/{disk.total//GB} GB'
-                         f' {disk_percent:.1f}%'))
+        c.text((0, 9), f'CPU: {load[0]:.2f}, {load[1]:.2f}, {load[2]:.2f}')
+        c.text((0, 18), self.resource_usage('Mem', mem.used, mem.total))
+        c.text((0, 27), self.resource_usage('Dsk', disk.used, disk.total))
+        c.text((0, 36), self.resource_usage('SD ', data.used, data.total))
         return c.image
 
     def get_stats(self):
@@ -58,5 +75,5 @@ class SystemInfoScreen(base.MicroPanelScreenBase):
             self.stats['load'] = (-1, 0, 0)
         self.stats['memory'] = psutil.virtual_memory()
         self.stats['disk'] = shutil.disk_usage('/')
-        
-    
+        # TODO(adrcunha): Make this configurable.
+        self.stats['data'] = shutil.disk_usage('/media/data')
