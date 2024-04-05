@@ -67,12 +67,14 @@ method. Subscreens will stay active until they return the value
 
 """
 
+import os
 from PIL import Image, ImageDraw, ImageFont
 
 
-DEFAULT_FONT = ImageFont.load_default()
+# Use Courier Bold 8pt as the default font to keep compatibility
+# with Pillow pre-10.1 (which default font is Aileron Regular)
+DEFAULT_FONT = ImageFont.load(os.path.dirname(os.path.abspath(__file__)) + "/courB08.pil")
 DEFAULT_FONT_LINE_HEIGHT = 9
-
 
 class MicroPanelCanvas:
     """Helper class for providing a pre-initialized drawing surface for screens.
@@ -96,6 +98,17 @@ class MicroPanelCanvas:
         """
         self.rectangle((0, 0, self.width, self.height), fill=color)
 
+    def _textsize(self, message, font):
+        """Returns the width and height of the message for the given font.
+
+        This method is compatible with Pillow 8.x, 9.x and 10.x braches.
+
+        """
+        try:
+            return self.textsize(message, font=font)
+        except:
+            return font.font.getsize(message)
+
     def text(self, point, message, **kwargs):
         """Draw text at a point on the canvas.
 
@@ -118,7 +131,7 @@ class MicroPanelCanvas:
 
         """
         kwargs.setdefault('font', DEFAULT_FONT)
-        text_size = self.textsize(message, font=kwargs['font'])
+        text_size = self._textsize(message, font=kwargs['font'])
         if '\n' in message:
             lines = message.rstrip('\n').split('\n')
             if kwargs['font'] == DEFAULT_FONT:
@@ -143,7 +156,7 @@ class MicroPanelCanvas:
 
         """
         kwargs.setdefault('font', DEFAULT_FONT)
-        text_size = self.textsize(message, font=kwargs['font'])
+        text_size = self._textsize(message, font=kwargs['font'])
         if '\n' in message:
             lines = message.rstrip('\n').split('\n')
             if kwargs['font'] == DEFAULT_FONT:
